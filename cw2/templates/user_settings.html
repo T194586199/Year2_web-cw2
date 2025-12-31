@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="settings-container">
+        <h1>Settings</h1>
+        
+        <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="profile">Profile</button>
+            <button class="tab-btn" data-tab="avatar">Avatar</button>
+            <button class="tab-btn" data-tab="password">Password</button>
+        </div>
+        
+        <div class="settings-content">
+            <div class="tab-content active" id="profile-tab">
+                <form method="POST" class="settings-form" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-group">
+                        {{ form.username.label }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            <div class="form-errors">
+                                {% for error in form.username.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.email.label }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            <div class="form-errors">
+                                {% for error in form.email.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.bio.label }}
+                        {{ form.bio(class="form-control", rows="4") }}
+                    </div>
+                    
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+            
+            <div class="tab-content" id="avatar-tab">
+                <form method="POST" class="settings-form" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-group">
+                        <div class="form-label">Current Avatar</div>
+                        <div class="avatar-preview">
+                            <img src="{{ url_for('static', filename='images/uploads/' + current_user.avatar_url) if current_user.avatar_url and current_user.avatar_url != 'default_avatar.png' else url_for('static', filename='images/default_avatar.png') }}" 
+                                 alt="Current avatar" 
+                                 class="current-avatar"
+                                 onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.avatar.label }}
+                        {{ form.avatar(class="form-control") }}
+                        {% if form.avatar.errors %}
+                            <div class="form-errors">
+                                {% for error in form.avatar.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text">Supports JPG, PNG, GIF formats, max 2MB</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="hidden" name="update_avatar" value="1">
+                        <button type="submit" class="btn btn-primary">Upload Avatar</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="tab-content" id="password-tab">
+                <form method="POST" class="settings-form">
+                    {{ password_form.hidden_tag() }}
+                    
+                    <div class="form-group">
+                        {{ password_form.old_password.label }}
+                        {{ password_form.old_password(class="form-control") }}
+                        {% if password_form.old_password.errors %}
+                            <div class="form-errors">
+                                {% for error in password_form.old_password.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ password_form.new_password.label }}
+                        {{ password_form.new_password(class="form-control") }}
+                        {% if password_form.new_password.errors %}
+                            <div class="form-errors">
+                                {% for error in password_form.new_password.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ password_form.new_password2.label }}
+                        {{ password_form.new_password2(class="form-control") }}
+                        {% if password_form.new_password2.errors %}
+                            <div class="form-errors">
+                                {% for error in password_form.new_password2.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {{ password_form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        });
+    });
+</script>
+{% endblock %}
+
+

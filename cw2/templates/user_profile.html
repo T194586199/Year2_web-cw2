@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "includes/icons.html" import icon_eye, icon_like, icon_comment %}
+
+{% block title %}{{ user.username }} - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <img src="{{ get_avatar_url(user) }}" 
+                 alt="{{ user.username }}'s avatar" 
+                 width="80" 
+                 height="80"
+                 onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'">
+        </div>
+        <div class="profile-info">
+            <h1>{{ user.username }}</h1>
+            {% if user.bio %}
+                <p class="profile-bio">{{ user.bio }}</p>
+            {% endif %}
+            <div class="profile-stats">
+                <span>Posts {{ stats.posts_count }}</span>
+                <span>Comments {{ stats.comments_count }}</span>
+                <span>Following {{ stats.following_count }}</span>
+                <span>Followers {{ stats.followers_count }}</span>
+            </div>
+            <div class="profile-actions">
+                {% if current_user.is_authenticated and current_user != user %}
+                    {% if is_following %}
+                        <form method="POST" action="{{ url_for('main.unfollow_user', username=user.username) }}" class="inline-form">
+                            <button type="submit" class="btn btn-secondary">Unfollow</button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('main.follow_user', username=user.username) }}" class="inline-form">
+                            <button type="submit" class="btn btn-primary">Follow</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-tabs">
+        <a href="{{ url_for('main.user_profile', username=user.username, tab='posts') }}" 
+           class="tab-link {% if tab == 'posts' %}active{% endif %}">Posts</a>
+        {% if current_user == user %}
+            <a href="{{ url_for('main.user_profile', username=user.username, tab='bookmarks') }}" 
+               class="tab-link {% if tab == 'bookmarks' %}active{% endif %}">Bookmarks</a>
+        {% endif %}
+    </div>
+    
+    <div class="profile-content">
+        {% if items %}
+            {% for item in items %}
+                <article class="post-card">
+                    <h2>
+                        <a href="{{ url_for('main.post_detail', post_id=item.id) }}">
+                            {{ item.title }}
+                        </a>
+                    </h2>
+                    <div class="post-meta">
+                        <span class="post-time">{{ time_ago(item.created_at) }}</span>
+                        <span class="post-category">{{ get_category_display(item.category) }}</span>
+                    </div>
+                    <div class="post-stats">
+                        <span>{{ icon_eye() }} {{ item.view_count }}</span>
+                        <span>{{ icon_like() }} {{ item.like_count }}</span>
+                        <span>{{ icon_comment() }} {{ item.comment_count }}</span>
+                    </div>
+                </article>
+            {% endfor %}
+            
+            {% if pagination and pagination.pages > 1 %}
+                <nav class="pagination">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('main.user_profile', username=user.username, page=pagination.prev_num, tab=tab) }}" 
+                           class="pagination-link">Previous</a>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                                <span class="pagination-current">{{ page_num }}</span>
+                            {% else %}
+                                <a href="{{ url_for('main.user_profile', username=user.username, page=page_num, tab=tab) }}" 
+                                   class="pagination-link">{{ page_num }}</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="pagination-ellipsis">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('main.user_profile', username=user.username, page=pagination.next_num, tab=tab) }}" 
+                           class="pagination-link">Next</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No content yet</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "includes/icons.html" import icon_eye, icon_like, icon_comment %}
+
+{% block title %}{{ tag.name }} - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="tag-header">
+        <h1>Tag: <span class="tag-name">{{ tag.name }}</span></h1>
+        {% if tag.description %}
+            <p class="tag-description">{{ tag.description }}</p>
+        {% endif %}
+        <div class="tag-stats">
+            <span>Used {{ tag.usage_count }} times</span>
+            <span>{{ pagination.total if pagination else posts|length }} posts</span>
+        </div>
+    </div>
+    
+    <div class="sort-options">
+        <a href="{{ url_for('main.tag_detail', tag_name=tag.name, sort='latest') }}" 
+           class="sort-link {% if sort == 'latest' %}active{% endif %}">Latest</a>
+        <a href="{{ url_for('main.tag_detail', tag_name=tag.name, sort='comments') }}" 
+           class="sort-link {% if sort == 'comments' %}active{% endif %}">Most Comments</a>
+        <a href="{{ url_for('main.tag_detail', tag_name=tag.name, sort='likes') }}" 
+           class="sort-link {% if sort == 'likes' %}active{% endif %}">Most Likes</a>
+        <a href="{{ url_for('main.tag_detail', tag_name=tag.name, sort='views') }}" 
+           class="sort-link {% if sort == 'views' %}active{% endif %}">Most Views</a>
+    </div>
+    
+    <div class="posts-list">
+        {% for post in posts %}
+            <article class="post-card">
+                <h2>
+                    <a href="{{ url_for('main.post_detail', post_id=post.id) }}">
+                        {{ post.title }}
+                    </a>
+                </h2>
+                <div class="post-meta">
+                    <a href="{{ url_for('main.user_profile', username=post.author.username) }}" 
+                       class="author-link">{{ post.author.username }}</a>
+                    <span class="post-time">{{ time_ago(post.created_at) }}</span>
+                    <span class="post-category">{{ get_category_display(post.category) }}</span>
+                </div>
+                <div class="post-stats">
+                    <span>{{ icon_eye() }} {{ post.view_count }}</span>
+                    <span>{{ icon_like() }} {{ post.like_count }}</span>
+                    <span>{{ icon_comment() }} {{ post.comment_count }}</span>
+                </div>
+            </article>
+        {% else %}
+            <div class="empty-state">
+                <p>No posts with this tag yet</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    {% if pagination and pagination.pages > 1 %}
+        <nav class="pagination">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('main.tag_detail', tag_name=tag.name, page=pagination.prev_num, sort=sort) }}" 
+                   class="pagination-link">Previous</a>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <span class="pagination-current">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for('main.tag_detail', tag_name=tag.name, page=page_num, sort=sort) }}" 
+                           class="pagination-link">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="pagination-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <a href="{{ url_for('main.tag_detail', tag_name=tag.name, page=pagination.next_num, sort=sort) }}" 
+                   class="pagination-link">Next</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+

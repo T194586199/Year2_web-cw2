@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Badminton enthusiasts community forum">
+    <title>{% block title %}Badminton Forum{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/background.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a aria-label="Home">
+                    <h1>🏸 Badminton Online</h1>
+                </a>
+            </div>
+            
+            <nav class="navbar-nav" role="navigation" aria-label="Main navigation">
+                <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('main.post_create') }}" class="nav-link">Post</a>
+                
+                <form class="search-form" action="{{ url_for('main.search') }}" method="GET" role="search">
+                    <input type="search" name="q" id="search-input" placeholder="Search posts, tags..." 
+                           aria-label="Search" autocomplete="off">
+                    <button type="submit" aria-label="Search">🔍</button>
+                    <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Search suggestions"></div>
+                </form>
+                
+                {% if current_user.is_authenticated %}
+                    <div class="user-menu">
+                        <a href="{{ url_for('main.user_profile', username=current_user.username) }}" 
+                           class="nav-link">{{ current_user.username }}</a>
+                        <a href="{{ url_for('main.settings') }}" class="nav-link">Settings</a>
+                        <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
+                    </div>
+                {% else %}
+                    <div class="user-menu">
+                        <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="nav-link btn-primary">Register</a>
+                    </div>
+                {% endif %}
+            </nav>
+            
+            <button class="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+    
+    <main id="main-content" class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" role="alert">
+                            {{ message }}
+                            <button class="alert-close" aria-label="Close">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ajax.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+

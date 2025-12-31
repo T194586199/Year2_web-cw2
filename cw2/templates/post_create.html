@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{% if post %}Edit Post{% else %}Create Post{% endif %} - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1>{% if post %}Edit Post{% else %}Create Post{% endif %}</h1>
+        
+        <form method="POST" class="post-form" id="post-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                <label for="{{ form.title.id }}">{{ form.title.label.text }}</label>
+                {{ form.title(class="form-control") }}
+                {% if form.title.errors %}
+                    <div class="form-errors">
+                        {% for error in form.title.errors %}
+                            <span class="error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.category.id }}">{{ form.category.label.text }}</label>
+                {{ form.category(class="form-control") }}
+            </div>
+            
+            <div class="form-group">
+                <label for="content-editor">{{ form.content.label.text }}</label>
+                <div class="markdown-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" data-action="bold" aria-label="Bold" title="Bold: Select text then click">B</button>
+                        <button type="button" class="toolbar-btn" data-action="italic" aria-label="Italic" title="Italic: Select text then click">I</button>
+                        <button type="button" class="toolbar-btn" data-action="link" aria-label="Link" title="Insert link">🔗</button>
+                    </div>
+                    <div class="editor-tips">
+                        <span class="tip-text">💡 Tip:</span>
+                        <span class="tip-item">Select text then click <strong>B</strong> for bold, <em>I</em> for italic</span>
+                    </div>
+                    {{ form.content(class="form-control", id="content-editor", rows="15") }}
+                    <div class="markdown-preview" id="markdown-preview"></div>
+                </div>
+                {% if form.content.errors %}
+                    <div class="form-errors">
+                        {% for error in form.content.errors %}
+                            <span class="error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="tag-input">{{ form.tags.label.text }}</label>
+                <div class="tag-selector">
+                    <input type="text" id="tag-input" class="form-control" 
+                           placeholder="Enter tags, separated by commas, max 5" 
+                           value="{{ form.tags.data or '' }}"
+                           aria-label="Tags input">
+                    <div class="tag-suggestions" id="tag-suggestions"></div>
+                    <div class="selected-tags" id="selected-tags"></div>
+                </div>
+                {% set tags_attrs = {"id": "tags-hidden", "style": "display:none;", "aria-label": "Tags hidden field"} %}
+                {{ form.tags(**tags_attrs) }}
+            </div>
+            
+            <div class="form-actions">
+                {{ form.submit(class="btn btn-primary") }}
+                {{ form.save_draft(class="btn btn-secondary") }}
+                <a href="{{ url_for('main.index') }}" class="btn btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Tag data
+    const allTags = {{ all_tags|map(attribute='name')|list|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/markdown-editor.js') }}"></script>
+{% endblock %}
+
+

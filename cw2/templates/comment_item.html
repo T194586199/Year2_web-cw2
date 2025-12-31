@@ -1,0 +1,56 @@
+{% from "includes/icons.html" import icon_like, icon_edit, icon_delete %}
+<div class="comment-item" data-comment-id="{{ comment.id }}">
+    <div class="comment-header">
+        <a href="{{ url_for('main.user_profile', username=comment.author.username) }}" 
+           class="comment-author">{{ comment.author.username }}</a>
+        <span class="comment-time">{{ time_ago(comment.created_at) }}</span>
+        {% if comment.updated_at and comment.updated_at != comment.created_at %}
+            <span class="comment-updated">(edited)</span>
+        {% endif %}
+    </div>
+    
+    <div class="comment-content">
+        {{ comment.content }}
+    </div>
+    
+    <div class="comment-actions">
+        {% if current_user.is_authenticated %}
+            <button class="btn-comment-like {% if current_user in comment.liked_by %}liked{% endif %}" 
+                    data-comment-id="{{ comment.id }}" 
+                    aria-label="Like comment">
+                {{ icon_like() }} <span class="like-count">{{ comment.like_count }}</span>
+            </button>
+            {% if comment.get_depth() < 3 %}
+                <button class="btn-reply" data-parent-id="{{ comment.id }}" 
+                        aria-label="Reply to comment">Reply</button>
+            {% endif %}
+        {% endif %}
+        
+        {% if current_user == comment.author %}
+            <a href="{{ url_for('main.comment_edit', comment_id=comment.id) }}" class="btn-edit">
+                {{ icon_edit() }}
+                <span>Edit</span>
+            </a>
+            <form method="POST" action="{{ url_for('main.comment_delete', comment_id=comment.id) }}" 
+                  class="inline-form" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                <button type="submit" class="btn-delete">
+                    {{ icon_delete() }}
+                    <span>Delete</span>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+    
+    {% if comment.replies.count() > 0 %}
+        <div class="comment-replies">
+            {% for reply in comment.replies %}
+                {% if not reply.is_deleted %}
+                    {% set comment = reply %}
+                    {% include 'comment_item.html' %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <h1>Login</h1>
+        
+        <form method="POST" class="auth-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username(class="form-control") }}
+                {% if form.username.errors %}
+                    <div class="form-errors">
+                        {% for error in form.username.errors %}
+                            <span class="error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password(class="form-control") }}
+                {% if form.password.errors %}
+                    <div class="form-errors">
+                        {% for error in form.password.errors %}
+                            <span class="error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.remember_me.label }}
+                {{ form.remember_me(class="form-control") }}
+            </div>
+            
+            {{ form.submit(class="btn btn-primary btn-block") }}
+        </form>
+        
+        <p class="auth-link">
+            Don't have an account? <a href="{{ url_for('auth.register') }}">Register now</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+

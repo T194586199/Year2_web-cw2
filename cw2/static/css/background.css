@@ -1,0 +1,75 @@
+/* Background image support - Badminton forum style */
+
+body {
+    position: relative;
+}
+
+/* Background image layer - with edge blur effect */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: var(--bg-image, url('/static/images/background.jpg'));
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    opacity: 0.25;
+    z-index: -2;
+    pointer-events: none;
+    /* Edge blur effect */
+    filter: blur(3px);
+    /* Ensure full viewport coverage */
+    transform: scale(1.05);
+}
+
+/* Gradient overlay layer - enhanced blending */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(241, 245, 249, 0.6) 0%,
+        rgba(241, 245, 249, 0.5) 50%,
+        rgba(241, 245, 249, 0.6) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Content area enhancement - ensure readability */
+.main-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Cards and content areas - semi-transparent background, blend with background image */
+.post-card, 
+.post-detail, 
+.profile-header, 
+.sidebar,
+.settings-container,
+.auth-container,
+.form-container {
+    background: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Navigation bar - keep clear and visible */
+.navbar {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.98) 0%, rgba(2, 132, 199, 0.98) 100%);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+

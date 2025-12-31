@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "includes/icons.html" import icon_eye, icon_like, icon_comment, icon_bookmark, icon_edit, icon_delete %}
+
+{% block title %}{{ post.title }} - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb navigation">
+        <a href="{{ url_for('main.index') }}">Home</a>
+        <span>/</span>
+        <span>{{ get_category_display(post.category) }}</span>
+    </nav>
+    
+    <article class="post-detail">
+        <header class="post-header">
+            <h1>{{ post.title }}</h1>
+            <div class="post-meta">
+                <a href="{{ url_for('main.user_profile', username=post.author.username) }}" 
+                   class="author-info">
+                    <span class="author-name">{{ post.author.username }}</span>
+                </a>
+                <span class="post-time">{{ time_ago(post.created_at) }}</span>
+                {% if post.updated_at != post.created_at %}
+                    <span class="post-updated">Edited {{ time_ago(post.updated_at) }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="post-tags">
+                {% for tag in post.tags %}
+                    <a href="{{ url_for('main.tag_detail', tag_name=tag.name) }}" 
+                       class="tag">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+        </header>
+        
+        <div class="post-content">
+            {{ render_markdown(post.content)|safe }}
+        </div>
+        
+        <div class="post-actions">
+            {% if current_user.is_authenticated %}
+                <button class="btn-like {% if current_user in post.liked_by %}liked{% endif %}" 
+                        data-post-id="{{ post.id }}" 
+                        aria-label="Like">
+                    {{ icon_like(current_user in post.liked_by) }}
+                    <span class="like-count">{{ post.like_count }}</span>
+                </button>
+                <button class="btn-bookmark {% if current_user in post.bookmarked_by %}bookmarked{% endif %}" 
+                        data-post-id="{{ post.id }}" 
+                        aria-label="Bookmark">
+                    {{ icon_bookmark(current_user in post.bookmarked_by) }}
+                    <span>Bookmark</span>
+                </button>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-like">
+                    {{ icon_like() }}
+                    <span class="like-count">{{ post.like_count }}</span>
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn-bookmark">
+                    {{ icon_bookmark() }}
+                    <span>Bookmark</span>
+                </a>
+            {% endif %}
+            
+            {% if current_user == post.author %}
+                <a href="{{ url_for('main.post_edit', post_id=post.id) }}" class="btn-edit">
+                    {{ icon_edit() }}
+                    <span>Edit</span>
+                </a>
+                <form method="POST" action="{{ url_for('main.post_delete', post_id=post.id) }}" 
+                      class="inline-form" onsubmit="return confirm('Are you sure you want to delete this post?');">
+                    <button type="submit" class="btn-delete">
+                        {{ icon_delete() }}
+                        <span>Delete</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        
+        <div class="post-stats">
+            <span>{{ icon_eye() }} {{ post.view_count }} views</span>
+            <span>{{ icon_like() }} {{ post.like_count }} likes</span>
+            <span>{{ icon_comment() }} {{ post.comment_count }} comments</span>
+        </div>
+    </article>
+    
+    <section class="comments-section">
+        <h2>Comments ({{ post.comment_count }})</h2>
+        
+        {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('main.comment_create', post_id=post.id) }}" 
+                  class="comment-form">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.content.label(class="sr-only") }}
+                    {{ form.content(class="form-control", rows="4", placeholder="Write your comment...") }}
+                    {{ form.parent_id() }}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        {% else %}
+            <p class="login-prompt">
+                Please <a href="{{ url_for('auth.login') }}">login</a> to comment
+            </p>
+        {% endif %}
+        
+        <div class="comments-list">
+            {% for comment in comments %}
+                {% if not comment.is_deleted %}
+                    {% include 'comment_item.html' %}
+                {% endif %}
+            {% else %}
+                <p class="empty-comments">No comments yet. Be the first to comment!</p>
+            {% endfor %}
+        </div>
+    </section>
+    
+    {% if related_posts %}
+        <section class="related-posts">
+            <h2>Related Posts</h2>
+            <ul>
+                {% for related_post in related_posts %}
+                    <li>
+                        <a href="{{ url_for('main.post_detail', post_id=related_post.id) }}">
+                            {{ related_post.title }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+
