@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Users - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-header">
+        <h1>Users Management</h1>
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-nav-link">Dashboard</a>
+            <a href="{{ url_for('admin.admin_posts') }}" class="admin-nav-link">Posts</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="admin-nav-link active">Users</a>
+            <a href="{{ url_for('admin.admin_comments') }}" class="admin-nav-link">Comments</a>
+        </nav>
+    </div>
+
+    <div class="admin-filters">
+        <form method="GET" class="filter-form" role="search" aria-label="Filter users">
+            <label for="search-users" class="sr-only">Search users</label>
+            <input type="text" name="search" id="search-users" placeholder="Search users..." value="{{ search }}" class="filter-input" aria-label="Search users">
+            <button type="submit" class="btn-primary" aria-label="Search users">Search</button>
+            <a href="{{ url_for('admin.admin_users') }}" class="btn-secondary" aria-label="Clear filters">Clear</a>
+        </form>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Posts</th>
+                    <th>Comments</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Last Login</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><a href="{{ url_for('main.user_profile', username=user.username) }}">{{ user.username }}</a></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.posts.count() }}</td>
+                    <td>{{ user.comments.filter_by(is_deleted=False).count() }}</td>
+                    <td>
+                        {% if user.is_admin %}<span class="badge badge-admin">Admin</span>{% endif %}
+                        {% if user.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                    </td>
+                    <td>{{ time_ago(user.created_at) }}</td>
+                    <td>{{ time_ago(user.last_login) if user.last_login else 'Never' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.admin_toggle_user_active', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn-small" aria-label="{{ 'Deactivate user' if user.is_active else 'Activate user' }}">{{ 'Deactivate' if user.is_active else 'Activate' }}</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.admin_toggle_user_admin', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to {% if user.is_admin %}revoke{% else %}grant{% endif %} admin privileges?');">
+                            <button type="submit" class="btn-small" aria-label="{{ 'Revoke admin privileges' if user.is_admin else 'Grant admin privileges' }}">{{ 'Revoke Admin' if user.is_admin else 'Grant Admin' }}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.admin_users', page=pagination.prev_num, search=search) }}" class="pagination-link">Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+            <a href="{{ url_for('admin.admin_users', page=pagination.next_num, search=search) }}" class="pagination-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.admin-header {
+    margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.admin-nav-link {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #212529;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s;
+}
+
+.admin-nav-link:hover {
+    background: #f5f5f5;
+    color: #000;
+}
+
+.admin-nav-link.active {
+    color: #d32f2f;
+    border-bottom: 2px solid #d32f2f;
+    margin-bottom: -2px;
+    font-weight: 600;
+}
+
+.admin-filters {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #666;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #212529;
+    background-color: #fff;
+}
+
+.filter-input:focus {
+    outline: 2px solid #d32f2f;
+    outline-offset: 2px;
+    border-color: #d32f2f;
+}
+
+.admin-table-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-table th {
+    background: #e9ecef;
+    font-weight: 600;
+    color: #212529;
+}
+
+.admin-table tr:hover {
+    background: #f8f9fa;
+}
+
+.admin-table a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.admin-table a:hover,
+.admin-table a:focus {
+    color: #0a58ca;
+    text-decoration: underline;
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+}
+
+.badge-admin {
+    background: #c62828;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.badge-active {
+    background: #2e7d32;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.badge-inactive {
+    background: #424242;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-small {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #c62828;
+    color: #ffffff;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-right: 0.25rem;
+}
+
+.btn-small:hover {
+    background: #b71c1c;
+}
+
+.btn-small:focus {
+    outline: 2px solid #c62828;
+    outline-offset: 2px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pagination-link {
+    padding: 0.5rem 1rem;
+    background: #c62828;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.pagination-link:hover {
+    background: #b71c1c;
+}
+
+.pagination-link:focus {
+    outline: 2px solid #c62828;
+    outline-offset: 2px;
+}
+
+.pagination-info {
+    color: #212529;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+</style>
+{% endblock %}
+

@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from app.models import Post, User, Tag
 from app import db
-from flask import url_for
+from flask import url_for, abort
+from functools import wraps
+from flask_login import current_user
 
 # Category mapping - maps both English and Chinese category names to display names
 CATEGORY_MAP = {
@@ -257,4 +259,14 @@ def get_recommended_posts(user=None, limit=15):
             unique_recommended.append(post)
     
     return unique_recommended[:limit]
+
+
+def admin_required(f):
+    """Decorator to require admin privileges"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
 

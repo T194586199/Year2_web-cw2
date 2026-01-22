@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User, Post, Tag, Comment
 from app.forms import RegistrationForm, LoginForm, PostForm, CommentForm, UserSettingsForm, PasswordChangeForm
-from app.utils import render_markdown, time_ago, get_recommended_posts, get_hot_posts, get_text_preview, get_avatar_url, get_category_display
+from app.utils import render_markdown, time_ago, get_recommended_posts, get_hot_posts, get_text_preview, get_avatar_url, get_category_display, admin_required
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
@@ -14,6 +14,7 @@ import re
 main = Blueprint('main', __name__)
 auth = Blueprint('auth', __name__)
 api = Blueprint('api', __name__)
+admin = Blueprint('admin', __name__)
 
 
 # ==================== Main Routes ====================
@@ -253,7 +254,7 @@ def post_delete(post_id):
     """Delete post"""
     post = Post.query.get_or_404(post_id)
     
-    if post.author != current_user:
+    if post.author != current_user and not current_user.is_admin:
         abort(403)
     
     # Remove tag associations
@@ -325,7 +326,7 @@ def comment_delete(comment_id):
     """Delete comment (soft delete)"""
     comment = Comment.query.get_or_404(comment_id)
     
-    if comment.author != current_user:
+    if comment.author != current_user and not current_user.is_admin:
         abort(403)
     
     comment.is_deleted = True
@@ -748,6 +749,250 @@ def search_suggest():
         })
     
     return jsonify({'suggestions': suggestions[:10]})
+
+
+# ==================== Admin Routes ====================
+
+@admin.route('/')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Admin dashboard"""
+    # Statistics
+    stats = {
+        'total_users': User.query.count(),
+        'total_posts': Post.query.count(),
+        'total_comments': Comment.query.count(),
+        'total_tags': Tag.query.count(),
+        'active_users': User.query.filter_by(is_active=True).count(),
+        'draft_posts': Post.query.filter_by(is_draft=True).count(),
+        'pinned_posts': Post.query.filter_by(is_pinned=True).count(),
+    }
+    
+    # Recent posts
+    recent_posts = Post.query.order_by(Post.created_at.desc()).limit(10).all()
+    
+    # Recent users
+    recent_users = User.query.order_by(User.created_at.desc()).limit(10).all()
+    
+    return render_template('admin/dashboard.html',
+                         stats=stats,
+                         recent_posts=recent_posts,
+                         recent_users=recent_users,
+                         time_ago=time_ago,
+                         get_category_display=get_category_display)
+
+
+@admin.route('/posts')
+@login_required
+@admin_required
+def admin_posts():
+    """Admin posts management"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    
+    query = Post.query
+    
+    if search:
+        query = query.filter(
+            (Post.title.contains(search)) | 
+            (Post.content.contains(search))
+        )
+    
+    if category:
+        query = query.filter_by(category=category)
+    
+    query = query.order_by(Post.created_at.desc())
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    posts = pagination.items
+    
+    return render_template('admin/posts.html',
+                         posts=posts,
+                         pagination=pagination,
+                         search=search,
+                         category=category,
+                         time_ago=time_ago,
+                         get_category_display=get_category_display)
+
+
+@admin.route('/posts/<int:post_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_post(post_id):
+    """Admin delete post"""
+    post = Post.query.get_or_404(post_id)
+    
+    # Remove tag associations
+    for tag in list(post.tags):
+        post.tags.remove(tag)
+        tag.decrement_usage()
+    
+    db.session.delete(post)
+    db.session.commit()
+    
+    flash('Post deleted successfully', 'success')
+    return redirect(url_for('admin.admin_posts'))
+
+
+@admin.route('/posts/<int:post_id>/pin', methods=['POST'])
+@login_required
+@admin_required
+def admin_pin_post(post_id):
+    """Admin pin/unpin post"""
+    post = Post.query.get_or_404(post_id)
+    post.is_pinned = not post.is_pinned
+    db.session.commit()
+    
+    action = 'pinned' if post.is_pinned else 'unpinned'
+    flash(f'Post {action} successfully', 'success')
+    return redirect(url_for('admin.admin_posts'))
+
+
+@admin.route('/users')
+@login_required
+@admin_required
+def admin_users():
+    """Admin users management"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = User.query
+    
+    if search:
+        query = query.filter(
+            (User.username.contains(search)) | 
+            (User.email.contains(search))
+        )
+    
+    query = query.order_by(User.created_at.desc())
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    users = pagination.items
+    
+    return render_template('admin/users.html',
+                         users=users,
+                         pagination=pagination,
+                         search=search,
+                         time_ago=time_ago)
+
+
+@admin.route('/users/<int:user_id>/toggle_active', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_user_active(user_id):
+    """Admin toggle user active status"""
+    user = User.query.get_or_404(user_id)
+    
+    if user == current_user:
+        flash('You cannot deactivate yourself', 'error')
+        return redirect(url_for('admin.admin_users'))
+    
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    status = 'activated' if user.is_active else 'deactivated'
+    flash(f'User {status} successfully', 'success')
+    return redirect(url_for('admin.admin_users'))
+
+
+@admin.route('/users/<int:user_id>/toggle_admin', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_user_admin(user_id):
+    """Admin toggle user admin status"""
+    user = User.query.get_or_404(user_id)
+    
+    if user == current_user:
+        flash('You cannot change your own admin status', 'error')
+        return redirect(url_for('admin.admin_users'))
+    
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    
+    status = 'granted admin privileges' if user.is_admin else 'revoked admin privileges'
+    flash(f'User {status} successfully', 'success')
+    return redirect(url_for('admin.admin_users'))
+
+
+@admin.route('/comments')
+@login_required
+@admin_required
+def admin_comments():
+    """Admin comments management"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = Comment.query
+    
+    if search:
+        query = query.filter(Comment.content.contains(search))
+    
+    query = query.order_by(Comment.created_at.desc())
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    comments = pagination.items
+    
+    return render_template('admin/comments.html',
+                         comments=comments,
+                         pagination=pagination,
+                         search=search,
+                         time_ago=time_ago)
+
+
+@admin.route('/comments/<int:comment_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_comment(comment_id):
+    """Admin delete comment"""
+    comment = Comment.query.get_or_404(comment_id)
+    
+    comment.is_deleted = True
+    if comment.post:
+        comment.post.comment_count = max(0, comment.post.comment_count - 1)
+    db.session.commit()
+    
+    flash('Comment deleted successfully', 'success')
+    return redirect(url_for('admin.admin_comments'))
+
+
+@admin.route('/tags')
+@login_required
+@admin_required
+def admin_tags():
+    """Admin tags management"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = Tag.query
+    
+    if search:
+        query = query.filter(Tag.name.contains(search))
+    
+    query = query.order_by(Tag.usage_count.desc(), Tag.name.asc())
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    tags = pagination.items
+    
+    return render_template('admin/tags.html',
+                         tags=tags,
+                         pagination=pagination,
+                         search=search)
+
+
+@admin.route('/tags/<int:tag_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_tag(tag_id):
+    """Admin delete tag"""
+    tag = Tag.query.get_or_404(tag_id)
+    
+    if tag.usage_count > 0:
+        flash('Cannot delete tag that is still in use', 'error')
+        return redirect(url_for('admin.admin_tags'))
+    
+    db.session.delete(tag)
+    db.session.commit()
+    
+    flash('Tag deleted successfully', 'success')
+    return redirect(url_for('admin.admin_tags'))
 
 
 # ==================== Error Handlers ====================

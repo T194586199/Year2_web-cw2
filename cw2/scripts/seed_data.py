@@ -49,9 +49,17 @@ def seed_data(clear_existing=False):
         
         # 1. Create users (15)
         users = []
+        existing_users = {u.username for u in User.query.all()}
         for i in range(15):
+            username = f'user{i+1}'
+            if username in existing_users:
+                # User already exists, get it from database
+                user = User.query.filter_by(username=username).first()
+                users.append(user)
+                continue
+            
             user = User(
-                username=f'user{i+1}',
+                username=username,
                 email=f'user{i+1}@example.com',
                 bio=f'Badminton enthusiast {i+1}, love sports!'
             )
@@ -60,7 +68,7 @@ def seed_data(clear_existing=False):
             db.session.add(user)
         
         db.session.commit()
-        print(f"Created {len(users)} users")
+        print(f"Processed {len(users)} users (some may already exist)")
         
         # 2. Create tags (40)
         tag_names = [
@@ -74,13 +82,20 @@ def seed_data(clear_existing=False):
             'Beginner', 'Advanced', 'Professional Training', 'Amateur Competition', 'Club Activities'
         ]
         tags = []
+        existing_tags = {t.name for t in Tag.query.all()}
         for name in tag_names:
+            if name in existing_tags:
+                # Tag already exists, get it from database
+                tag = Tag.query.filter_by(name=name).first()
+                tags.append(tag)
+                continue
+            
             tag = Tag(name=name, description=f'Discussion about {name}')
             tags.append(tag)
             db.session.add(tag)
         
         db.session.commit()
-        print(f"Created {len(tags)} tags")
+        print(f"Processed {len(tags)} tags (some may already exist)")
         
         # 3. Create posts (80)
         categories = ['Technique', 'Equipment', 'Tournament', 'Training', 'Other']

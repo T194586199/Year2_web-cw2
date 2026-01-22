@@ -148,10 +148,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const postForm = document.querySelector('.post-form');
         if (postForm) {
             postForm.addEventListener('submit', function(e) {
-                // 确保隐藏字段的值是最新的
                 updateHiddenInput();
                 
-                // 如果用户在输入框中直接输入了逗号分隔的标签，也要处理
                 const inputValue = tagInput.value.trim();
                 if (inputValue && !inputValue.includes(',')) {
                     // Single tag, if not added yet, add it
@@ -197,17 +195,17 @@ function applyMarkdownAction(action, textarea) {
                 replacement = `*${selectedText}*`;
                 cursorPos = start + replacement.length;
             } else {
-                replacement = '*斜体文字*';
-                cursorPos = start + 1; // 光标放在"斜体文字"前面
+                replacement = '*italic text*';
+                cursorPos = start + 1; 
             }
             break;
         case 'link':
             if (selectedText) {
                 replacement = `[${selectedText}](URL)`;
-                cursorPos = start + replacement.length - 4; // 光标放在URL位置
+                cursorPos = start + replacement.length - 4; 
             } else {
-                replacement = '[链接文字](URL)';
-                cursorPos = start + 1; // 光标放在"链接文字"前面
+                replacement = '[link text](URL)';
+                cursorPos = start + 1; 
             }
             break;
     }

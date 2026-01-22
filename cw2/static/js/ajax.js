@@ -91,10 +91,10 @@ function bookmarkPost(postId, button) {
             // 更新按钮状态
             if (data.bookmarked) {
                 button.classList.add('bookmarked');
-                button.querySelector('span').textContent = '已收藏';
+                button.querySelector('span').textContent = 'Bookmark';
             } else {
                 button.classList.remove('bookmarked');
-                button.querySelector('span').textContent = '收藏';
+                button.querySelector('span').textContent = 'Bookmarked';
             }
             
             // 添加动画效果

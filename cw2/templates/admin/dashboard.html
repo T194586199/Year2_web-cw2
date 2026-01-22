@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Badminton Forum{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-nav-link active">Dashboard</a>
+            <a href="{{ url_for('admin.admin_posts') }}" class="admin-nav-link">Posts</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="admin-nav-link">Users</a>
+            <a href="{{ url_for('admin.admin_comments') }}" class="admin-nav-link">Comments</a>
+        </nav>
+    </div>
+
+    <div class="admin-stats">
+        <div class="stat-card">
+            <h3>Total Users</h3>
+            <p class="stat-number">{{ stats.total_users }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Posts</h3>
+            <p class="stat-number">{{ stats.total_posts }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Comments</h3>
+            <p class="stat-number">{{ stats.total_comments }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Tags</h3>
+            <p class="stat-number">{{ stats.total_tags }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Active Users</h3>
+            <p class="stat-number">{{ stats.active_users }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Draft Posts</h3>
+            <p class="stat-number">{{ stats.draft_posts }}</p>
+        </div>
+    </div>
+
+    <div class="admin-sections">
+        <section class="admin-section">
+            <h2>Recent Posts</h2>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Category</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in recent_posts %}
+                        <tr>
+                            <td><a href="{{ url_for('main.post_detail', post_id=post.id) }}">{{ post.title[:50] }}{% if post.title|length > 50 %}...{% endif %}</a></td>
+                            <td><a href="{{ url_for('main.user_profile', username=post.author.username) }}">{{ post.author.username }}</a></td>
+                            <td>{{ get_category_display(post.category) }}</td>
+                            <td>{{ time_ago(post.created_at) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Recent Users</h2>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td><a href="{{ url_for('main.user_profile', username=user.username) }}">{{ user.username }}</a></td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ time_ago(user.created_at) }}</td>
+                            <td>
+                                {% if user.is_admin %}<span class="badge badge-admin">Admin</span>{% endif %}
+                                {% if user.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.admin_users') }}?search={{ user.username }}" class="btn-small">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+.admin-header {
+    margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.admin-nav-link {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #212529;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s;
+}
+
+.admin-nav-link:hover {
+    background: #f5f5f5;
+    color: #000;
+}
+
+.admin-nav-link.active {
+    color: #d32f2f;
+    border-bottom: 2px solid #d32f2f;
+    margin-bottom: -2px;
+    font-weight: 600;
+}
+
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: normal;
+}
+
+.stat-number {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #d32f2f;
+}
+
+.admin-sections {
+    display: grid;
+    gap: 2rem;
+}
+
+.admin-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-section h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.admin-table-container {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-table th {
+    background: #e9ecef;
+    font-weight: 600;
+    color: #212529;
+}
+
+.admin-table tr:hover {
+    background: #f8f9fa;
+}
+
+.admin-table a:not(.btn-small) {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.admin-table a:not(.btn-small):hover,
+.admin-table a:not(.btn-small):focus {
+    color: #0a58ca;
+    text-decoration: underline;
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+}
+
+.badge-admin {
+    background: #c62828;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.badge-active {
+    background: #2e7d32;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.badge-inactive {
+    background: #424242;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-small {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #c62828;
+    color: #ffffff !important;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.btn-small:hover {
+    background: #b71c1c;
+    color: #ffffff !important;
+}
+
+.btn-small:focus {
+    outline: 2px solid #c62828;
+    outline-offset: 2px;
+    color: #ffffff !important;
+}
+
+.btn-small:visited {
+    color: #ffffff !important;
+}
+</style>
+{% endblock %}
+
